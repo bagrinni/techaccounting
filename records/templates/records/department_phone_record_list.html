@@ -1,0 +1,238 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Номера организации</title>
+  <!-- Подключаем Bootstrap CSS -->
+  <link href="{% static 'bootstrap/css/bootstrap.min.css' %}" rel="stylesheet">
+</head>
+<body>
+  <!-- Навигационное меню -->
+  <nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <div class="container">
+      <a class="navbar-brand" href="{% url 'home' %}">Tech Accounting</a>
+    </div>
+  </nav>
+  
+  <div class="container mt-5">
+    <h1>Номера выбранной организации: {{ department.name }}</h1>
+    
+    <!-- Если пользователь имеет права, показываем кнопку добавления -->
+    {% if can_edit %}
+    <button type="button" class="btn btn-success mb-4" data-bs-toggle="modal" data-bs-target="#addModal">
+      Добавить новый номер
+    </button>
+    {% endif %}
+    
+    <!-- Форма поиска -->
+    <form id="search-form" class="mb-4">
+      <div class="row">
+        <div class="col-md-4">
+          <input type="text" name="phone" class="form-control" placeholder="Поиск по телефону">
+        </div>
+        <div class="col-md-4">
+          <input type="text" name="port_asl" class="form-control" placeholder="Поиск по порту">
+        </div>
+        <div class="col-md-4">
+          <button type="submit" class="btn btn-primary">Поиск</button>
+        </div>
+      </div>
+    </form>
+    
+    <!-- Таблица с номерами -->
+    <table class="table table-bordered">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>4-значный</th>
+          <th>6-значный</th>
+          <th>Порт АСЛ</th>
+          <th>Stan</th>
+          <th>Lin</th>
+          {% if can_edit %}
+          <th>Действия</th>
+          {% endif %}
+        </tr>
+      </thead>
+      <tbody id="phone-records-table">
+        {% for record in phone_records %}
+        <tr data-id="{{ record.id }}">
+          <td>{{ record.id }}</td>
+          <td>{{ record.phone_4 }}</td>
+          <td>{{ record.phone_6 }}</td>
+          <td>{{ record.port_asl }}</td>
+          <td>{{ record.stan }}</td>
+          <td>{{ record.lin }}</td>
+          {% if can_edit %}
+          <td>
+            <button type="button" class="btn btn-sm btn-primary" onclick="openEditModal({{ record.id }})">
+              Редактировать
+            </button>
+            <button type="button" class="btn btn-sm btn-danger" onclick="confirmDelete({{ record.id }})">
+              Удалить
+            </button>
+          </td>
+          {% endif %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  
+  <!-- Модальное окно для добавления номера -->
+  <div class="modal fade" id="addModal" tabindex="-1" aria-labelledby="addModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="addModalLabel">Добавить новый номер</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+        </div>
+        <div class="modal-body">
+          <form id="add-phone-record-form">
+            {% csrf_token %}
+            {{ create_form.as_p }}
+            <button type="submit" class="btn btn-success">Добавить номер</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Модальное окно подтверждения удаления -->
+  <div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="deleteModalLabel">Подтвердите удаление</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+        </div>
+        <div class="modal-body">
+          Вы уверены, что хотите удалить этот номер?
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+          <button type="button" class="btn btn-danger" id="confirm-delete-btn">Удалить</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Универсальное модальное окно для редактирования номера -->
+  <div class="modal fade" id="editModal" tabindex="-1" aria-labelledby="editModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="editModalLabel">Редактировать номер</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+        </div>
+        <div class="modal-body">
+          <!-- Форма редактирования будет загружена сюда через AJAX -->
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Подключаем Bootstrap JS и jQuery -->
+  <script src="{% static 'bootstrap/js/bootstrap.bundle.min.js' %}"></script>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  
+  <script>
+    // Передаем значение прав редактирования
+    var can_edit = {{ can_edit|yesno:"true,false" }};
+    // Шаблон URL для редактирования, заменяем 'RECORD_ID' на конкретный id
+    var editUrlTemplate = "/records/RECORD_ID/edit/";
+    var recordIdToDelete = null;
+    
+    // Функция открытия модального окна редактирования
+    function openEditModal(recordId) {
+      var editUrl = editUrlTemplate.replace('RECORD_ID', recordId);
+      $.get(editUrl, function(data) {
+        $('#editModal .modal-body').html(data);
+        var editModal = new bootstrap.Modal(document.getElementById('editModal'));
+        editModal.show();
+      }).fail(function(jqXHR, textStatus, errorThrown) {
+        console.error("Ошибка загрузки формы:", textStatus, errorThrown);
+        alert('Ошибка загрузки формы редактирования.');
+      });
+    }
+    
+    // Функция для показа модального окна удаления
+    function confirmDelete(recordId) {
+      recordIdToDelete = recordId;
+      var deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
+      deleteModal.show();
+    }
+    
+    // Обработка подтверждения удаления
+    $('#confirm-delete-btn').click(function() {
+      if (recordIdToDelete) {
+        $.ajax({
+          url: "{% url 'phone-record-delete' %}",
+          type: "POST",
+          data: {
+            'id': recordIdToDelete,
+            'csrfmiddlewaretoken': '{{ csrf_token }}',
+          },
+          success: function(response) {
+            if (response.success) {
+              alert('Запись успешно удалена');
+              $('tr[data-id="' + recordIdToDelete + '"]').remove();
+              var deleteModal = bootstrap.Modal.getInstance(document.getElementById('deleteModal'));
+              deleteModal.hide();
+            } else {
+              alert('Ошибка при удалении записи');
+            }
+          },
+          error: function() {
+            alert('Ошибка при удалении записи');
+          }
+        });
+      }
+    });
+    
+    // Обработка поиска
+    $("#search-form").submit(function(e) {
+      e.preventDefault();
+      $.get("{% url 'department-phone-record-list' department_id=department.id %}", $(this).serialize(), function(data) {
+        let rows = '';
+        data.records.forEach(function(record) {
+          rows += `
+            <tr data-id="${record.id}">
+              <td>${record.id}</td>
+              <td>${record.phone_4}</td>
+              <td>${record.phone_6}</td>
+              <td>${record.port_asl}</td>
+              <td>${record.stan}</td>
+              <td>${record.lin}</td>
+              ${can_edit ? `<td>
+                <button type="button" class="btn btn-sm btn-primary" onclick="openEditModal(${record.id})">
+                  Редактировать
+                </button>
+                <button type="button" class="btn btn-sm btn-danger" onclick="confirmDelete(${record.id})">
+                  Удалить
+                </button>
+              </td>` : ''}
+            </tr>
+          `;
+        });
+        $("#phone-records-table").html(rows);
+      }).fail(function() {
+        alert('Ошибка при выполнении поиска.');
+      });
+    });
+    
+    // Обработка добавления нового номера
+    $("#add-phone-record-form").submit(function(e) {
+      e.preventDefault();
+      $.post("{% url 'department-phone-record-list' department_id=department.id %}", $(this).serialize(), function(data) {
+        if (data.error) {
+          alert(data.error);
+        } else {
+          location.reload();
+        }
+      });
+    });
+  </script>
+</body>
+</html>

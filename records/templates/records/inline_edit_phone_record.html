@@ -1,0 +1,6 @@
+<!-- templates/records/inline_edit_phone_record.html -->
+<form id="edit-phone-record-form" method="post" action="{% url 'phone-record-edit' record.id %}">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit" class="btn btn-success">Сохранить изменения</button>
+</form>

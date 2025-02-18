@@ -1,0 +1,244 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Номера населения</title>
+    <!-- Подключаем локальный Bootstrap CSS -->
+    <link href="{% static 'bootstrap/css/bootstrap.min.css' %}" rel="stylesheet">
+</head>
+<body>
+    <!-- Навигационное меню -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <div class="container">
+            <a class="navbar-brand" href="{% url 'home' %}">Tech Accounting</a>
+        </div>
+    </nav>
+    
+    <div class="container mt-5">
+        <h1>Номера обычного населения</h1>
+        
+        <!-- Форма поиска -->
+        <form id="search-form" class="mb-4">
+            <div class="row">
+                <div class="col-md-3">
+                    <input type="text" name="phone" class="form-control" placeholder="Поиск по телефону">
+                </div>
+                <div class="col-md-3">
+                    <input type="text" name="port_asl" class="form-control" placeholder="Поиск по порту">
+                </div>
+                <div class="col-md-3">
+                    <input type="text" name="lin" class="form-control" placeholder="Поиск по линии">
+                </div>
+                <div class="col-md-3">
+                    <button type="submit" class="btn btn-primary">Поиск</button>
+                </div>
+            </div>
+        </form>
+
+        <!-- Таблица с записями -->
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>4-значный</th>
+                    <th>6-значный</th>
+                    <th>Порт АСЛ</th>
+                    <th>Stan</th>
+                    <th>Lin</th>
+                    <th>Адрес</th>  <!-- Новый столбец для адреса -->
+                    {% if can_edit %}
+                    <th>Действия</th>
+                    {% endif %}
+                </tr>
+            </thead>
+            <tbody id="phone-records-table">
+                {% for record in phone_records %}
+                <tr data-id="{{ record.id }}">
+                    <td>{{ record.id }}</td>
+                    <td>{{ record.phone_4 }}</td>
+                    <td>{{ record.phone_6 }}</td>
+                    <td>{{ record.port_asl }}</td>
+                    <td>{{ record.stan }}</td>
+                    <td>{{ record.lin }}</td>
+                    <td>{{ record.address }}</td>  <!-- Отображение адреса -->
+                    {% if can_edit %}
+                    <td>
+                        <!-- Кнопка редактирования -->
+                        <button type="button" class="btn btn-sm btn-primary" onclick="openEditModal({{ record.id }})">
+                            Редактировать
+                        </button>
+                        <button type="button" class="btn btn-sm btn-danger" onclick="confirmDelete({{ record.id }})">
+                            Удалить
+                        </button>
+                    </td>
+                    {% endif %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+  <!-- Пагинация -->
+  <nav aria-label="Page navigation example">
+    <ul class="pagination">
+        {% if page_obj.has_previous %}
+        <li class="page-item">
+            <a class="page-link" href="?page=1" aria-label="First">
+                <span aria-hidden="true">&laquo;&laquo;</span>
+            </a>
+        </li>
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.previous_page_number }}" aria-label="Previous">
+                <span aria-hidden="true">&laquo;</span>
+            </a>
+        </li>
+        {% endif %}
+
+        <li class="page-item disabled">
+            <span class="page-link">
+                {{ page_obj.number }} из {{ page_obj.paginator.num_pages }}
+            </span>
+        </li>
+
+        {% if page_obj.has_next %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.next_page_number }}" aria-label="Next">
+                <span aria-hidden="true">&raquo;</span>
+            </a>
+        </li>
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}" aria-label="Last">
+                <span aria-hidden="true">&raquo;&raquo;</span>
+            </a>
+        </li>
+        {% endif %}
+    </ul>
+</nav>
+</div>
+
+    <!-- Модальное окно для подтверждения удаления -->
+    <div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="deleteModalLabel">Подтвердите удаление</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                </div>
+                <div class="modal-body">
+                    Вы уверены, что хотите удалить этот номер?
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="button" class="btn btn-danger" id="confirm-delete-btn">Удалить</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Универсальное модальное окно для редактирования -->
+    <div class="modal fade" id="editModal" tabindex="-1" aria-labelledby="editModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editModalLabel">Редактировать номер</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- Форма редактирования будет загружена сюда через AJAX -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Подключаем локальные Bootstrap JS и jQuery -->
+    <script src="{% static 'bootstrap/js/bootstrap.bundle.min.js' %}"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    
+    <script>
+    // Глобальная переменная: значение can_edit из контекста
+    var can_edit = {{ can_edit|yesno:"true,false" }}; 
+    var editUrlTemplate = "/records/RECORD_ID/edit/";
+    let recordIdToDelete = null;  // Для хранения ID записи, которую будем удалять
+
+    // Функция для открытия модального окна редактирования
+    function openEditModal(recordId) {
+        var editUrl = editUrlTemplate.replace('RECORD_ID', recordId);
+        $.get(editUrl, function(data) {
+            $('#editModal .modal-body').html(data);
+            var editModal = new bootstrap.Modal(document.getElementById('editModal'));
+            editModal.show();
+        }).fail(function(jqXHR, textStatus, errorThrown) {
+            console.error("Ошибка загрузки формы:", textStatus, errorThrown);
+            alert('Ошибка загрузки формы редактирования.');
+        });
+    }
+
+    // Функция для открытия модального окна подтверждения удаления
+    function confirmDelete(recordId) {
+        recordIdToDelete = recordId;
+        var deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
+        deleteModal.show();
+    }
+
+    // Обработка подтверждения удаления
+    $('#confirm-delete-btn').click(function() {
+        if (recordIdToDelete) {
+            $.ajax({
+                url: "{% url 'phone-record-delete' %}",
+                type: "POST",
+                data: {
+                    'id': recordIdToDelete,
+                    'csrfmiddlewaretoken': '{{ csrf_token }}',
+                },
+                success: function(response) {
+                    if (response.success) {
+                        alert('Запись успешно удалена');
+                        // Удаляем строку из таблицы без перезагрузки страницы
+                        $('tr[data-id="' + recordIdToDelete + '"]').remove();
+                        var deleteModal = bootstrap.Modal.getInstance(document.getElementById('deleteModal'));
+                        deleteModal.hide();
+                    } else {
+                        alert('Ошибка при удалении записи');
+                    }
+                },
+                error: function() {
+                    alert('Ошибка при удалении записи');
+                }
+            });
+        }
+    });
+
+    // Обработка поиска
+    $("#search-form").submit(function (e) {
+        e.preventDefault();
+        $.get("{% url 'phone-record-list' %}", $(this).serialize(), function (data) {
+            let rows = '';
+            data.records.forEach(function (record) {
+                rows += `
+                    <tr data-id="${record.id}">
+                        <td>${record.id}</td>
+                        <td>${record.phone_4}</td>
+                        <td>${record.phone_6}</td>
+                        <td>${record.port_asl}</td>
+                        <td>${record.stan}</td>
+                        <td>${record.lin}</td>
+                        <td>${record.address}</td>  <!-- Отображение адреса -->
+                        ${can_edit ? `<td>
+                            <button type="button" class="btn btn-sm btn-primary" onclick="openEditModal(${record.id})">
+                                Редактировать
+                            </button>
+                            <button type="button" class="btn btn-sm btn-danger" onclick="confirmDelete(${record.id})">
+                                Удалить
+                            </button>
+                        </td>` : '' }
+                    </tr>
+                `;
+            });
+            $("#phone-records-table").html(rows);
+        }).fail(function() {
+            alert('Ошибка при выполнении поиска.');
+        });
+    });
+    </script>
+</body>
+</html>

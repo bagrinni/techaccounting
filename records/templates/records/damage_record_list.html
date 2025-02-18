@@ -1,0 +1,134 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Записи повреждений</title>
+    <link href="{% static 'bootstrap/css/bootstrap.min.css' %}" rel="stylesheet">
+    <style>
+        .table td, .table th {
+            max-width: 200px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .table-responsive {
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+
+  <!-- Навигационное меню -->
+  <nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <div class="container">
+      <a class="navbar-brand" href="{% url 'home' %}">Tech Accounting</a>
+    </div>
+  </nav>
+
+    <div class="container mt-5">
+        <h1 class="mb-4">Записи повреждений</h1>
+
+        <button class="btn btn-primary mb-4" data-bs-toggle="modal" data-bs-target="#damageRecordModal">Добавить повреждение</button>
+
+        <!-- Модальное окно для формы -->
+        <div class="modal fade" id="damageRecordModal" tabindex="-1" aria-labelledby="damageRecordModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="damageRecordModalLabel">Запись повреждения</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form method="post">
+                            {% csrf_token %}
+                            <div class="mb-3">
+                                <label for="id_phone_record" class="form-label">Телефон</label>
+                                {{ form.phone_record }}
+                            </div>
+                            <div class="mb-3">
+                                <label for="id_failure_type" class="form-label">Тип повреждения</label>
+                                {{ form.failure_type }}
+                            </div>
+                            <div class="mb-3">
+                                <label for="id_comment" class="form-label">Комментарий</label>
+                                {{ form.comment }}
+                            </div>
+                            <button type="submit" class="btn btn-primary w-100">Сохранить</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Список повреждений -->
+        <div class="card">
+            <div class="card-body">
+                <h2 class="mb-3">Список повреждений</h2>
+
+                <div class="table-responsive">
+                    <table class="table table-bordered">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Телефон</th>
+                                <th>Тип повреждения</th> <!-- Новый столбец для типа повреждения -->
+                                <th>Описание</th>
+                                <th>Пользователь</th>
+                                <th>Дата</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for damage in damages %}
+                            <tr>
+                                <td>{{ damage.id }}</td>
+                                <td>{{ damage.phone_record.phone_4 }} / {{ damage.phone_record.phone_6 }}</td>
+                                <td>{{ damage.failure_type.type }}</td> <!-- Вывод типа повреждения -->
+                                <!-- Для комментария добавляем модальное окно -->
+                                <td><a href="#" data-bs-toggle="modal" data-bs-target="#fullCommentModal" data-comment="{{ damage.comment }}" class="text-truncate">Просмотр</a></td>
+                                <td>{{ damage.user.username }}</td>
+                                <td>{{ damage.created_at|date:"d.m.Y H:i" }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" class="text-center">Нет записей о повреждениях</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно для полного комментария -->
+    <div class="modal fade" id="fullCommentModal" tabindex="-1" aria-labelledby="fullCommentModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="fullCommentModalLabel">Полный комментарий</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                </div>
+                <div class="modal-body">
+                    <p id="fullCommentText"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Подключение скриптов Bootstrap -->
+    <script src="{% static 'bootstrap/js/bootstrap.bundle.min.js' %}"></script>
+
+    <!-- Скрипт для отображения полного комментария -->
+    <script>
+        var commentModal = document.getElementById('fullCommentModal');
+        commentModal.addEventListener('show.bs.modal', function (event) {
+            var button = event.relatedTarget; // Кнопка, которая вызывает модальное окно
+            var comment = button.getAttribute('data-comment'); // Получаем полный комментарий
+            var modalBody = commentModal.querySelector('.modal-body p');
+            modalBody.textContent = comment; // Вставляем текст в модальное окно
+        });
+    </script>
+</body>
+</html>

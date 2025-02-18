@@ -1,0 +1,130 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Главная страница - Система учета номеров</title>
+    <!-- Подключаем локально Bootstrap CSS -->
+    <link href="{% static 'bootstrap/css/bootstrap.min.css' %}" rel="stylesheet">
+    <style>
+        /* Устанавливаем минимальную высоту для body и html, чтобы контент заполнил всю высоту страницы */
+        html, body {
+            height: 100%;
+        }
+
+        /* Используем флексбокс для всего контента */
+        .content-wrapper {
+            display: flex;
+            flex-direction: column;
+            min-height: 100%;
+        }
+
+        /* Контент, который будет растягиваться */
+        .main-content {
+            flex: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="content-wrapper">
+        <nav class="navbar navbar-expand-lg navbar-light bg-light">
+            <div class="container">
+              <a class="navbar-brand" href="{% url 'home' %}">Tech Accounting</a>
+              <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                      aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+              </button>
+              <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                  <li class="nav-item"><a class="nav-link" href="{% url 'phone-record-list' %}">Список номеров</a></li>
+                  <li class="nav-item"><a class="nav-link" href="{% url 'population-phone-record-list' %}">Население</a></li>
+                  <li class="nav-item"><a class="nav-link" href="{% url 'damage-record-add' %}">Повреждения</a></li>
+                  <li class="nav-item"><a class="nav-link" href="{% url 'department-phone-record-list' 1 %}">Организации</a></li>
+                </ul>
+
+                <!-- Если пользователь авторизован, показываем его имя -->
+                {% if user.is_authenticated %}
+                    <span class="navbar-text me-3">
+                        Привет, {{ user.username }}!
+                    </span>
+                {% endif %}
+
+                <!-- Форма выхода -->
+                <form action="{% url 'logout' %}" method="post" class="d-flex">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-outline-danger">Выйти</button>
+                </form>
+              </div>
+            </div>
+        </nav>
+
+        <!-- Основной контент -->
+        <div class="main-content container mt-5">
+            <div class="text-center">
+                <h1>Добро пожаловать в систему учета номеров</h1>
+                <p>Выберите раздел для работы:</p>
+            </div>
+            <div class="row mt-4 d-flex justify-content-between">
+                <!-- Карточка "Список номеров" -->
+                <div class="col-md-3 mb-4 d-flex">
+                    <div class="card flex-column h-100">
+                        <div class="card-body d-flex flex-column justify-content-between">
+                            <div>
+                                <h5 class="card-title">Список номеров</h5>
+                                <p class="card-text">Просмотр и поиск номеров.</p>
+                            </div>
+                            <a href="{% url 'phone-record-list' %}" class="btn btn-primary" style="margin-top: 8px;">Перейти</a>
+                        </div>
+                    </div>
+                </div>
+                <!-- Карточка "Организации" -->
+                <div class="col-md-3 mb-4 d-flex">
+                    <div class="card flex-column h-100">
+                        <div class="card-body d-flex flex-column justify-content-between">
+                            <div>
+                                <h5 class="card-title">Организации</h5>
+                                <p class="card-text">Номера, закрепленные за организациями.</p>
+                            </div>
+                            <a href="{% url 'departmens-list' %}" class="btn btn-primary" style="margin-top: 8px;">Перейти</a>
+                        </div>
+                    </div>
+                </div>
+                <!-- Карточка "Население" -->
+                <div class="col-md-3 mb-4 d-flex">
+                    <div class="card flex-column h-100">
+                        <div class="card-body d-flex flex-column justify-content-between">
+                            <div>
+                                <h5 class="card-title">Население</h5>
+                                <p class="card-text">Номера обычного населения.</p>
+                            </div>
+                            <a href="{% url 'population-phone-record-list' %}" class="btn btn-primary" style="margin-top: 8px;">Перейти</a>
+                        </div>
+                    </div>
+                </div>
+                <!-- Карточка "Повреждения" -->
+                <div class="col-md-3 mb-4 d-flex">
+                    <div class="card flex-column h-100">
+                        <div class="card-body d-flex flex-column justify-content-between">
+                            <div>
+                                <h5 class="card-title">Повреждения</h5>
+                                <p class="card-text">Запись повреждения для номера.</p>
+                            </div>
+                            <a href="{% url 'damage-record-add' %}" class="btn btn-primary" style="margin-top: 8px;">Перейти</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Подвал -->
+        <footer class="bg-light py-3 mt-5">
+            <div class="container text-center">
+                <p class="mb-0">© 2025 BagrinnisTech. Все права защищены.</p>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Подключаем локально Bootstrap JS -->
+    <script src="{% static 'bootstrap/js/bootstrap.bundle.min.js' %}"></script>
+</body>
+</html>
